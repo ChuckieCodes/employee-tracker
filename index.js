@@ -33,6 +33,26 @@ async function queryRoles() {
   }
 }
 
+async function queryEmployees() {
+  try {
+    const [rows] = await pool.execute(
+      `select 
+        e.id,
+        concat(e.first_name, ' ', e.last_name) full_name,
+        ifnull((select concat(first_name, ' ', last_name) from employee where id = e.manager_id), 'no manager') manager, 
+        r.title, 
+        r.salary 
+      from 
+        employee e 
+      left join 
+        role r on r.id = e.role_id`
+    )
+    return rows;
+  } catch(err) {
+    console.log(`Something went wrong: ${err}`);
+  }
+}
+
 async function showAllDepartments() {
   console.log(`\nDepartment Table\n`)
   console.table(await queryDepartments())
@@ -42,6 +62,12 @@ async function showAllDepartments() {
 async function showAllRoles() {
   console.log(`\nRole Table\n`)
   console.table(await queryRoles())
+  init()
+}
+
+async function showAllEmployees() {
+  console.log(`\nEmployee Table\n`)
+  console.table(await queryEmployees())
   init()
 }
 
@@ -99,6 +125,52 @@ async function addRole() {
     })
 }
 
+async function addEmployee() {
+  const rChoiceRows = await queryRoles();
+  const rChoices = rChoiceRows.map(row => ({ value: row.id, name: row.title }));
+
+  const eChoiceRows = await queryEmployees();
+  let eChoices = eChoiceRows.map(row => ({ value: row.id, name: row.full_name }));
+
+  // check if first employee
+  eChoices.unshift({value: null, name: 'No Manager'});
+
+  inquirer
+    .prompt([
+      {
+        type: 'input',
+        name: 'firstName',
+        message: 'Enter employee first name: ',
+      },
+      {
+        type: 'input',
+        name: 'lastName',
+        message: 'Enter employee last name: ',
+      },
+      {
+        type: 'list',
+        name: 'roleId',
+        message: 'Choose role: ',
+        choices: rChoices
+      },
+      {
+        type: 'list',
+        name: 'managerId',
+        message: 'Choose manager: ',
+        choices: eChoices
+      }
+    ])
+    .then(async function({ roleId, managerId, firstName, lastName }) {
+      try {
+        const [result] = await pool.execute('insert into employee (role_id, manager_id, first_name, last_name) values (?, ?, ?, ?)', [roleId, managerId, firstName, lastName]);
+        console.log(`\nInsert successful. Added ${firstName} ${lastName} in employee table.\n`);
+        init();
+      } catch (err) {
+        console.log(`Something went wrong: ${err}`);
+      }
+    })
+}
+
 async function updateRole() {
   const rChoiceRows = await queryRoles();
   const rChoices = rChoiceRows.map(row => ({ value: row.id, name: row.title }));
@@ -108,7 +180,7 @@ async function updateRole() {
       {
         type: 'list',
         name: 'roleId',
-        message: 'Choose employee you want to update: ',
+        message: 'Choose role you want to update: ',
         choices: rChoices
       }
     )
