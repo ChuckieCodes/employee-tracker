@@ -171,6 +171,66 @@ async function addEmployee() {
     })
 }
 
+async function updateEmployee() {
+  const eChoiceRows = await queryEmployees();
+  let eChoices = eChoiceRows.map(row => ({ value: row.id, name: row.full_name }));
+
+  inquirer
+    .prompt(
+      {
+        type: 'list',
+        name: 'employeeId',
+        message: 'Choose employee you want to update: ',
+        choices: eChoices
+      }
+    )
+    .then(async function({ employeeId }) {
+      const rChoiceRows = await queryRoles();
+      const rChoices = rChoiceRows.map(row => ({ value: row.id, name: row.title }));
+
+      const eChoiceRows = await queryEmployees();
+      let eChoices = eChoiceRows.map(row => ({ value: row.id, name: row.full_name }));
+
+      // check if first employee
+      eChoices.unshift({value: null, name: 'No Manager'});
+
+      inquirer
+        .prompt([
+          {
+            type: 'input',
+            name: 'firstName',
+            message: 'Enter employee first name: ',
+          },
+          {
+            type: 'input',
+            name: 'lastName',
+            message: 'Enter employee last name: ',
+          },
+          {
+            type: 'list',
+            name: 'roleId',
+            message: 'Choose role: ',
+            choices: rChoices
+          },
+          {
+            type: 'list',
+            name: 'managerId',
+            message: 'Choose manager: ',
+            choices: eChoices
+          }
+        ])
+        .then(async function({ roleId, managerId, firstName, lastName }) {
+          try {
+            const [result] = await pool.execute('update employee set role_id = ?, manager_id = ?, first_name = ?, last_name = ? where id = ?', [roleId, managerId, firstName, lastName, employeeId]);
+            console.log(`\nUpdate successful. Updated ${firstName} ${lastName} in employee table.\n`);
+            init();
+          } catch (err) {
+            console.log(`Something went wrong: ${err}`);
+          }
+        })
+    })
+}
+
 async function updateRole() {
   const rChoiceRows = await queryRoles();
   const rChoices = rChoiceRows.map(row => ({ value: row.id, name: row.title }));
