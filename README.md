@@ -6,6 +6,9 @@
 ## Description
 An CLI app, powered by node, inquirer.js and using mysql for the database. Lets you add, update and browse departments, roles and employees.
 
+## Walkthrough Video
+Uploaded to Google Drive --> [link here](https://drive.google.com/file/d/11HVSmP1qVNfGFpiyUcwnBtfRm_ep367H/view)<br />
+
 ## Table of Contents
 
 - [Installation](#installation)
